@@ -82,10 +82,11 @@ def query(
 
 @app.command()
 def suggest(
-    alert: str = typer.Argument(..., help="Alert text to triage")
+    alert: str = typer.Argument(..., help="Alert text to triage"),
+    no_ticket: bool = typer.Option(False, "--no-ticket", "-n", help="Don't create a ticket, just show suggestion")
 ):
     """
-    Generate a triage suggestion for an alert.
+    Generate a triage suggestion for an alert and create a ticket.
     """
     from db.database import get_db_context
     from app.services.triage_service import TriageService
@@ -95,34 +96,71 @@ def suggest(
     try:
         with get_db_context() as db:
             service = TriageService(db)
-            result = service.quick_triage(alert)
 
-        # Display classification
-        classification = result["classification"]
-        console.print(Panel(
-            f"[bold]Type:[/bold] {classification['alert_type']}\n"
-            f"[bold]Severity:[/bold] {classification['severity']}\n"
-            f"[bold]Title:[/bold] {classification['title']}\n"
-            f"[bold]Source:[/bold] {classification.get('source_system', 'Unknown')}\n"
-            f"[bold]Component:[/bold] {classification.get('affected_component', 'Unknown')}",
-            title="[bold]Alert Classification[/bold]",
-            border_style="cyan"
-        ))
-        console.print()
+            if no_ticket:
+                # Quick triage without creating ticket
+                result = service.quick_triage(alert)
 
-        # Display runbook sources
-        if result["runbook_sources"]:
-            console.print("[bold]Relevant Runbooks:[/bold]")
-            for src in result["runbook_sources"]:
-                console.print(f"  - {src['file']} ({src['score']:.0%})")
-            console.print()
+                # Display classification
+                classification = result["classification"]
+                console.print(Panel(
+                    f"[bold]Type:[/bold] {classification['alert_type']}\n"
+                    f"[bold]Severity:[/bold] {classification['severity']}\n"
+                    f"[bold]Title:[/bold] {classification['title']}\n"
+                    f"[bold]Source:[/bold] {classification.get('source_system', 'Unknown')}\n"
+                    f"[bold]Component:[/bold] {classification.get('affected_component', 'Unknown')}",
+                    title="[bold]Alert Classification[/bold]",
+                    border_style="cyan"
+                ))
+                console.print()
 
-        # Display suggestion
-        console.print(Panel(
-            Markdown(result["suggestion"]),
-            title=f"[bold]Triage Suggestion[/bold] (Confidence: {result['confidence']})",
-            border_style="green"
-        ))
+                # Display runbook sources
+                if result["runbook_sources"]:
+                    console.print("[bold]Relevant Runbooks:[/bold]")
+                    for src in result["runbook_sources"]:
+                        console.print(f"  - {src['file']} ({src['score']:.0%})")
+                    console.print()
+
+                # Display suggestion
+                console.print(Panel(
+                    Markdown(result["suggestion"]),
+                    title=f"[bold]Triage Suggestion[/bold] (Confidence: {result['confidence']})",
+                    border_style="green"
+                ))
+            else:
+                # Full triage with ticket creation
+                ticket = service.process_alert(alert)
+
+                # Display ticket info
+                console.print(Panel(
+                    f"[bold]Ticket ID:[/bold] #{ticket.id}\n"
+                    f"[bold]Type:[/bold] {ticket.alert_type.value}\n"
+                    f"[bold]Severity:[/bold] {ticket.severity.value}\n"
+                    f"[bold]Title:[/bold] {ticket.title}\n"
+                    f"[bold]Status:[/bold] {ticket.status.value}\n"
+                    f"[bold]Source:[/bold] {ticket.source_system or 'Unknown'}",
+                    title="[bold green]Ticket Created[/bold green]",
+                    border_style="cyan"
+                ))
+                console.print()
+
+                # Display runbook sources
+                if ticket.runbook_sources:
+                    console.print("[bold]Relevant Runbooks:[/bold]")
+                    for src in ticket.runbook_sources:
+                        console.print(f"  - {src}")
+                    console.print()
+
+                # Display suggestion
+                if ticket.suggestion:
+                    console.print(Panel(
+                        Markdown(ticket.suggestion),
+                        title=f"[bold]Triage Suggestion[/bold] (Confidence: {ticket.confidence_score or 'N/A'})",
+                        border_style="green"
+                    ))
+
+                console.print(f"\n[bold green]View ticket:[/bold green] python -m cli.main show {ticket.id}")
+                console.print(f"[bold green]Dashboard:[/bold green] http://localhost:8080/dashboard/ticket/{ticket.id}")
 
     except Exception as e:
         console.print(f"[bold red]Error: {e}[/bold red]")

@@ -319,8 +319,11 @@ Default credentials:
 # Search runbooks for relevant information
 python -m cli.main query "database connection timeout"
 
-# Generate triage suggestion for an alert
+# Generate triage suggestion AND create a ticket
 python -m cli.main suggest "CRITICAL: Server disk full at 95%"
+
+# Generate triage suggestion WITHOUT creating a ticket
+python -m cli.main suggest "CRITICAL: Server disk full at 95%" --no-ticket
 
 # List all tickets
 python -m cli.main tickets

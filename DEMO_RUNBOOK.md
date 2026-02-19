@@ -16,6 +16,128 @@ This guide walks through common demo scenarios to showcase the system's capabili
 
 ---
 
+## Server Management
+
+### Start the Server
+
+```bash
+# Start on default port 8080
+python -m cli.main serve --port 8080
+
+# Start with auto-reload (for development)
+python -m cli.main serve --port 8080 --reload
+
+# Start on a different port
+python -m cli.main serve --port 9000
+```
+
+### Stop the Server
+
+**Method 1: Ctrl + C (Recommended)**
+
+Press `Ctrl + C` in the terminal where the server is running.
+
+```
+^C
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [12345]
+```
+
+**Method 2: Kill by Port (Windows)**
+
+```cmd
+# Find process using port 8080
+netstat -ano | findstr :8080
+
+# Kill by PID (replace 12345 with actual PID from above)
+taskkill /PID 12345 /F
+```
+
+**Method 3: Kill by Port (Windows PowerShell)**
+
+```powershell
+# Find and kill in one command
+Get-NetTCPConnection -LocalPort 8080 | Select-Object -ExpandProperty OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force }
+```
+
+**Method 4: Kill by Port (Linux/Mac)**
+
+```bash
+# Find process using port 8080
+lsof -i :8080
+
+# Kill by port directly
+kill $(lsof -t -i:8080)
+
+# Force kill if needed
+kill -9 $(lsof -t -i:8080)
+```
+
+**Method 5: Kill all Python processes (Use with caution)**
+
+```cmd
+# Windows - kills ALL python processes
+taskkill /IM python.exe /F
+
+# Linux/Mac
+pkill -f python
+```
+
+### Restart the Server
+
+1. Stop the server: `Ctrl + C`
+2. Start again:
+   ```bash
+   python -m cli.main serve --port 8080
+   ```
+
+### Check if Server is Running
+
+```bash
+# Using curl
+curl http://localhost:8080/health
+
+# Using browser
+# Open http://localhost:8080/health
+```
+
+Expected response:
+```json
+{"status": "healthy", "version": "1.0.0"}
+```
+
+### Running Server in Background (Windows)
+
+```bash
+# Start in background
+start /B python -m cli.main serve --port 8080 > server.log 2>&1
+
+# View logs
+type server.log
+
+# Find and stop the process
+tasklist | findstr python
+taskkill /PID <process_id> /F
+```
+
+### Running Server in Background (Linux/Mac)
+
+```bash
+# Start in background
+nohup python -m cli.main serve --port 8080 > server.log 2>&1 &
+
+# View logs
+tail -f server.log
+
+# Find and stop the process
+ps aux | grep "cli.main serve"
+kill <process_id>
+```
+
+---
+
 ## Demo 1: CLI - Search Runbooks
 
 Search for relevant runbook content without creating a ticket.
@@ -35,33 +157,40 @@ python -m cli.main query "server disk full alert"
 
 ---
 
-## Demo 2: CLI - Generate Triage Suggestion
+## Demo 2: CLI - Generate Triage Suggestion & Create Ticket
 
 Create a ticket with AI-powered triage suggestions.
 
 ```bash
-# Infrastructure alert - High CPU
+# Infrastructure alert - High CPU (creates ticket)
 python -m cli.main suggest "CRITICAL: CPU usage at 98% on web-server-01 for 15 minutes"
 
-# Application alert - API timeout
+# Application alert - API timeout (creates ticket)
 python -m cli.main suggest "ALERT: API Gateway returning 504 timeout errors. Latency spiked to 30s. Affecting 40% of requests to /api/v2/orders endpoint"
 
-# Database alert - Connection issues
+# Database alert - Connection issues (creates ticket)
 python -m cli.main suggest "ERROR: PostgreSQL connection pool exhausted on db-primary-01. Active connections: 100/100. Waiting queries: 47"
 
-# Memory alert
+# Memory alert (creates ticket)
 python -m cli.main suggest "WARNING: Memory usage at 92% on app-server-03. OOM killer may trigger soon"
 
-# Disk alert
+# Disk alert (creates ticket)
 python -m cli.main suggest "CRITICAL: Disk usage at 95% on /var/log partition. Server: log-aggregator-01"
+
+# Quick triage WITHOUT creating a ticket (use --no-ticket or -n flag)
+python -m cli.main suggest "CRITICAL: Test alert" --no-ticket
+python -m cli.main suggest "CRITICAL: Test alert" -n
 ```
 
-**Expected Output:** Ticket created with:
-- Summary
-- Immediate Actions
-- Root Cause Hypothesis
-- Escalation Recommendation
-- Confidence Level
+**Expected Output:**
+- Ticket ID and details
+- AI-generated triage suggestion with:
+  - Summary
+  - Immediate Actions
+  - Root Cause Hypothesis
+  - Escalation Recommendation
+  - Confidence Level
+- Links to view ticket in CLI and Dashboard
 
 ---
 
@@ -282,6 +411,7 @@ python -m cli.main stats
 | Index runbooks | `python -m cli.main index` |
 | Search runbooks | `python -m cli.main query "search term"` |
 | Create triaged ticket | `python -m cli.main suggest "alert message"` |
+| Triage without ticket | `python -m cli.main suggest "alert" --no-ticket` |
 | List tickets | `python -m cli.main tickets` |
 | View ticket | `python -m cli.main show {id}` |
 | Statistics | `python -m cli.main stats` |
