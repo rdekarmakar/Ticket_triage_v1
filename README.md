@@ -334,6 +334,16 @@ python -m cli.main tickets --status open --severity critical
 # View a specific ticket
 python -m cli.main show 1
 
+# Update ticket status
+python -m cli.main update 1 --status in_progress
+python -m cli.main update 1 --status resolved
+
+# Update ticket severity
+python -m cli.main update 1 --severity critical
+
+# Close a ticket (shortcut)
+python -m cli.main close 1
+
 # View ticket statistics
 python -m cli.main stats
 

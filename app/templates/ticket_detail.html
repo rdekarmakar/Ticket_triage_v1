@@ -113,18 +113,16 @@
             <div class="card">
                 <h3>Actions</h3>
                 <div class="action-buttons">
-                    <form action="/api/tickets/{{ ticket.id }}" method="POST" class="inline-form">
-                        <input type="hidden" name="_method" value="PATCH">
+                    <form action="/dashboard/ticket/{{ ticket.id }}/update" method="POST" class="inline-form">
                         <select name="status" onchange="this.form.submit()">
                             <option value="">Change Status...</option>
-                            <option value="open">Open</option>
-                            <option value="in_progress">In Progress</option>
-                            <option value="resolved">Resolved</option>
-                            <option value="closed">Closed</option>
-                            <option value="escalated">Escalated</option>
+                            <option value="open" {% if ticket.status.value == 'open' %}selected{% endif %}>Open</option>
+                            <option value="in_progress" {% if ticket.status.value == 'in_progress' %}selected{% endif %}>In Progress</option>
+                            <option value="resolved" {% if ticket.status.value == 'resolved' %}selected{% endif %}>Resolved</option>
+                            <option value="closed" {% if ticket.status.value == 'closed' %}selected{% endif %}>Closed</option>
                         </select>
                     </form>
-                    <a href="/api/tickets/{{ ticket.id }}/triage" class="btn btn-secondary">
+                    <a href="/dashboard/ticket/{{ ticket.id }}/triage" class="btn btn-secondary">
                         Re-run Triage
                     </a>
                 </div>

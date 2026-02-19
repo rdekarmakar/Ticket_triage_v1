@@ -3,7 +3,7 @@ Main FastAPI application entry point.
 """
 
 from typing import Optional
-from fastapi import FastAPI, Request, Depends, Query
+from fastapi import FastAPI, Request, Depends, Query, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse
@@ -156,6 +156,62 @@ async def ticket_detail(
             "active_page": "tickets"
         }
     )
+
+
+@app.post("/dashboard/ticket/{ticket_id}/update")
+async def update_ticket_status(
+    ticket_id: int,
+    status: str = Form(...),
+    username: str = Depends(get_current_user),
+    db: Session = Depends(get_db_session)
+):
+    """Update ticket status from web form."""
+    from db.models import TicketStatus
+
+    repo = TicketRepository(db)
+    ticket = repo.get(ticket_id)
+
+    if not ticket:
+        return RedirectResponse(url="/dashboard", status_code=302)
+
+    # Update status
+    try:
+        new_status = TicketStatus(status)
+        repo.update(ticket_id, status=new_status, performed_by=username)
+    except ValueError:
+        pass  # Invalid status, ignore
+
+    return RedirectResponse(url=f"/dashboard/ticket/{ticket_id}", status_code=302)
+
+
+@app.get("/dashboard/ticket/{ticket_id}/triage")
+async def retriage_ticket_web(
+    ticket_id: int,
+    username: str = Depends(get_current_user),
+    db: Session = Depends(get_db_session)
+):
+    """Re-run triage on a ticket from web."""
+    from app.services.triage_service import TriageService
+
+    repo = TicketRepository(db)
+    ticket = repo.get(ticket_id)
+
+    if not ticket:
+        return RedirectResponse(url="/dashboard", status_code=302)
+
+    # Re-triage
+    triage_service = TriageService(db)
+    result = triage_service.quick_triage(ticket.raw_message)
+
+    # Update ticket with new suggestion
+    repo.update_suggestion(
+        ticket_id,
+        suggestion=result["suggestion"],
+        runbook_sources=[s["file"] for s in result["runbook_sources"]],
+        confidence_score=result["confidence"]
+    )
+
+    return RedirectResponse(url=f"/dashboard/ticket/{ticket_id}", status_code=302)
 
 
 # Run with uvicorn

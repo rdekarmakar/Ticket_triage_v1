@@ -104,6 +104,41 @@ class TicketRepository:
         )
         return sorted(tickets, key=lambda t: severity_order.get(t.severity, 99))
 
+    def update(
+        self,
+        ticket_id: int,
+        status: Optional[TicketStatus] = None,
+        severity: Optional[Severity] = None,
+        performed_by: str = "system"
+    ) -> Optional[Ticket]:
+        """Update ticket fields."""
+        ticket = self.get(ticket_id)
+        if not ticket:
+            return None
+
+        if status is not None:
+            old_status = ticket.status
+            ticket.status = status
+            self._log_action(
+                ticket_id, "status_changed",
+                old_status.value, status.value, performed_by
+            )
+            if status == TicketStatus.RESOLVED:
+                ticket.resolved_at = datetime.utcnow()
+
+        if severity is not None:
+            old_severity = ticket.severity
+            ticket.severity = severity
+            self._log_action(
+                ticket_id, "severity_changed",
+                old_severity.value, severity.value, performed_by
+            )
+
+        ticket.updated_at = datetime.utcnow()
+        self.db.commit()
+        self.db.refresh(ticket)
+        return ticket
+
     def update_status(
         self,
         ticket_id: int,
@@ -111,25 +146,7 @@ class TicketRepository:
         performed_by: str = "system"
     ) -> Optional[Ticket]:
         """Update ticket status."""
-        ticket = self.get(ticket_id)
-        if not ticket:
-            return None
-
-        old_status = ticket.status
-        ticket.status = new_status
-        ticket.updated_at = datetime.utcnow()
-
-        if new_status == TicketStatus.RESOLVED:
-            ticket.resolved_at = datetime.utcnow()
-
-        self._log_action(
-            ticket_id, "status_changed",
-            old_status.value, new_status.value, performed_by
-        )
-
-        self.db.commit()
-        self.db.refresh(ticket)
-        return ticket
+        return self.update(ticket_id, status=new_status, performed_by=performed_by)
 
     def update_suggestion(
         self,

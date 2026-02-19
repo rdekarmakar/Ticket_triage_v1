@@ -301,6 +301,95 @@ def show(
 
 
 @app.command()
+def update(
+    ticket_id: int = typer.Argument(..., help="Ticket ID to update"),
+    status: Optional[str] = typer.Option(None, "--status", "-s", help="New status (open, in_progress, resolved, closed)"),
+    severity: Optional[str] = typer.Option(None, "--severity", help="New severity (critical, high, medium, low, info)")
+):
+    """
+    Update a ticket's status or severity.
+    """
+    from db.database import get_db_context
+    from db.repository import TicketRepository
+    from db.models import TicketStatus, Severity
+
+    if not status and not severity:
+        console.print("[yellow]Please specify --status or --severity to update[/yellow]")
+        raise typer.Exit(code=1)
+
+    try:
+        with get_db_context() as db:
+            repo = TicketRepository(db)
+            ticket = repo.get(ticket_id)
+
+            if not ticket:
+                console.print(f"[red]Ticket #{ticket_id} not found[/red]")
+                raise typer.Exit(code=1)
+
+            updates = {}
+
+            if status:
+                try:
+                    updates["status"] = TicketStatus(status)
+                except ValueError:
+                    console.print(f"[red]Invalid status: {status}[/red]")
+                    console.print("[yellow]Valid statuses: open, in_progress, resolved, closed[/yellow]")
+                    raise typer.Exit(code=1)
+
+            if severity:
+                try:
+                    updates["severity"] = Severity(severity)
+                except ValueError:
+                    console.print(f"[red]Invalid severity: {severity}[/red]")
+                    console.print("[yellow]Valid severities: critical, high, medium, low, info[/yellow]")
+                    raise typer.Exit(code=1)
+
+            updated_ticket = repo.update(ticket_id, **updates)
+
+            console.print(Panel(
+                f"[bold]Ticket ID:[/bold] #{updated_ticket.id}\n"
+                f"[bold]Title:[/bold] {updated_ticket.title}\n"
+                f"[bold]Status:[/bold] {updated_ticket.status.value}\n"
+                f"[bold]Severity:[/bold] {updated_ticket.severity.value}",
+                title="[bold green]Ticket Updated[/bold green]",
+                border_style="green"
+            ))
+
+    except Exception as e:
+        console.print(f"[bold red]Error: {e}[/bold red]")
+        raise typer.Exit(code=1)
+
+
+@app.command()
+def close(
+    ticket_id: int = typer.Argument(..., help="Ticket ID to close")
+):
+    """
+    Close a ticket (shortcut for update --status resolved).
+    """
+    from db.database import get_db_context
+    from db.repository import TicketRepository
+    from db.models import TicketStatus
+
+    try:
+        with get_db_context() as db:
+            repo = TicketRepository(db)
+            ticket = repo.get(ticket_id)
+
+            if not ticket:
+                console.print(f"[red]Ticket #{ticket_id} not found[/red]")
+                raise typer.Exit(code=1)
+
+            updated_ticket = repo.update(ticket_id, status=TicketStatus.RESOLVED)
+
+            console.print(f"[bold green]Ticket #{ticket_id} has been resolved[/bold green]")
+
+    except Exception as e:
+        console.print(f"[bold red]Error: {e}[/bold red]")
+        raise typer.Exit(code=1)
+
+
+@app.command()
 def stats():
     """
     Show ticket statistics.

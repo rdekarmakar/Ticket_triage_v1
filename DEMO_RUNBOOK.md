@@ -194,7 +194,32 @@ python -m cli.main suggest "CRITICAL: Test alert" -n
 
 ---
 
-## Demo 3: CLI - View Tickets
+## Demo 3: CLI - Update & Close Tickets
+
+```bash
+# Update ticket status
+python -m cli.main update 1 --status in_progress
+python -m cli.main update 1 --status resolved
+python -m cli.main update 1 --status closed
+
+# Update ticket severity
+python -m cli.main update 1 --severity high
+python -m cli.main update 1 --severity critical
+
+# Update both at once
+python -m cli.main update 1 --status in_progress --severity high
+
+# Close a ticket (shortcut for --status resolved)
+python -m cli.main close 1
+```
+
+**Available Statuses:** `open`, `in_progress`, `resolved`, `closed`
+
+**Available Severities:** `critical`, `high`, `medium`, `low`, `info`
+
+---
+
+## Demo 4: CLI - View Tickets
 
 ```bash
 # List all tickets
@@ -414,6 +439,8 @@ python -m cli.main stats
 | Triage without ticket | `python -m cli.main suggest "alert" --no-ticket` |
 | List tickets | `python -m cli.main tickets` |
 | View ticket | `python -m cli.main show {id}` |
+| Update ticket | `python -m cli.main update {id} --status resolved` |
+| Close ticket | `python -m cli.main close {id}` |
 | Statistics | `python -m cli.main stats` |
 | Dashboard | http://localhost:8080/dashboard |
 | API Docs | http://localhost:8080/docs |
