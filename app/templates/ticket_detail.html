@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}Ticket #{{ ticket.id }} - Ticket Triage{% endblock %}
+
+{% block content %}
+<div class="ticket-detail">
+    <div class="ticket-header">
+        <div class="header-main">
+            <a href="/dashboard" class="back-link">&larr; Back to Dashboard</a>
+            <h1>Ticket #{{ ticket.id }}</h1>
+        </div>
+        <div class="header-badges">
+            <span class="badge badge-{{ ticket.severity.value }}">
+                {{ ticket.severity.value | upper }}
+            </span>
+            <span class="status-badge status-{{ ticket.status.value }}">
+                {{ ticket.status.value | replace('_', ' ') | title }}
+            </span>
+        </div>
+    </div>
+
+    <div class="ticket-grid">
+        <!-- Main Content -->
+        <div class="ticket-main">
+            <div class="card">
+                <h2>{{ ticket.title }}</h2>
+                <div class="meta">
+                    <span class="type-badge">{{ ticket.alert_type.value }}</span>
+                    <span class="timestamp">Created: {{ ticket.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                    {% if ticket.source_system %}
+                    <span class="source">Source: {{ ticket.source_system }}</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Triage Suggestion -->
+            {% if ticket.suggestion %}
+            <div class="card suggestion-card">
+                <h3>Triage Suggestion</h3>
+                {% if ticket.confidence_score %}
+                <div class="confidence">
+                    Confidence: <span class="confidence-{{ ticket.confidence_score | lower }}">
+                        {{ ticket.confidence_score }}
+                    </span>
+                </div>
+                {% endif %}
+                <div class="suggestion-content">
+                    {{ ticket.suggestion | safe }}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Runbook Sources -->
+            {% if ticket.runbook_sources %}
+            <div class="card">
+                <h3>Runbook References</h3>
+                <ul class="runbook-list">
+                    {% for source in ticket.runbook_sources %}
+                    <li>{{ source }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <!-- Raw Alert -->
+            <div class="card">
+                <h3>Original Alert</h3>
+                <pre class="raw-message">{{ ticket.raw_message }}</pre>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="ticket-sidebar">
+            <div class="card">
+                <h3>Details</h3>
+                <dl class="detail-list">
+                    <dt>Status</dt>
+                    <dd>
+                        <span class="status-badge status-{{ ticket.status.value }}">
+                            {{ ticket.status.value | replace('_', ' ') | title }}
+                        </span>
+                    </dd>
+
+                    <dt>Severity</dt>
+                    <dd>
+                        <span class="badge badge-{{ ticket.severity.value }}">
+                            {{ ticket.severity.value | upper }}
+                        </span>
+                    </dd>
+
+                    <dt>Type</dt>
+                    <dd>{{ ticket.alert_type.value | title }}</dd>
+
+                    <dt>Created</dt>
+                    <dd>{{ ticket.created_at.strftime('%Y-%m-%d %H:%M') }}</dd>
+
+                    <dt>Updated</dt>
+                    <dd>{{ ticket.updated_at.strftime('%Y-%m-%d %H:%M') }}</dd>
+
+                    {% if ticket.resolved_at %}
+                    <dt>Resolved</dt>
+                    <dd>{{ ticket.resolved_at.strftime('%Y-%m-%d %H:%M') }}</dd>
+                    {% endif %}
+
+                    {% if ticket.webex_room_id %}
+                    <dt>Webex Room</dt>
+                    <dd class="truncate">{{ ticket.webex_room_id }}</dd>
+                    {% endif %}
+                </dl>
+            </div>
+
+            <!-- Actions -->
+            <div class="card">
+                <h3>Actions</h3>
+                <div class="action-buttons">
+                    <form action="/api/tickets/{{ ticket.id }}" method="POST" class="inline-form">
+                        <input type="hidden" name="_method" value="PATCH">
+                        <select name="status" onchange="this.form.submit()">
+                            <option value="">Change Status...</option>
+                            <option value="open">Open</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="resolved">Resolved</option>
+                            <option value="closed">Closed</option>
+                            <option value="escalated">Escalated</option>
+                        </select>
+                    </form>
+                    <a href="/api/tickets/{{ ticket.id }}/triage" class="btn btn-secondary">
+                        Re-run Triage
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

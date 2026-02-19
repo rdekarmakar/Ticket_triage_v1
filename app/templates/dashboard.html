@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Ticket Triage{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <h1>Ticket Dashboard</h1>
+
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+        <div class="stat-card critical">
+            <span class="stat-count">{{ stats.critical_count }}</span>
+            <span class="stat-label">Critical</span>
+        </div>
+        <div class="stat-card high">
+            <span class="stat-count">{{ stats.high_count }}</span>
+            <span class="stat-label">High</span>
+        </div>
+        <div class="stat-card open">
+            <span class="stat-count">{{ stats.open_count }}</span>
+            <span class="stat-label">Open</span>
+        </div>
+        <div class="stat-card total">
+            <span class="stat-count">{{ stats.total }}</span>
+            <span class="stat-label">Total</span>
+        </div>
+    </div>
+
+    <!-- Recent Tickets -->
+    <div class="section">
+        <h2>Recent Tickets</h2>
+
+        {% if tickets %}
+        <table class="ticket-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Severity</th>
+                    <th>Title</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ticket in tickets %}
+                <tr class="severity-row severity-{{ ticket.severity.value }}">
+                    <td>
+                        <a href="/dashboard/ticket/{{ ticket.id }}">#{{ ticket.id }}</a>
+                    </td>
+                    <td>
+                        <span class="badge badge-{{ ticket.severity.value }}">
+                            {{ ticket.severity.value | upper }}
+                        </span>
+                    </td>
+                    <td class="ticket-title">
+                        <a href="/dashboard/ticket/{{ ticket.id }}">
+                            {{ ticket.title[:60] }}{% if ticket.title | length > 60 %}...{% endif %}
+                        </a>
+                    </td>
+                    <td>
+                        <span class="type-badge">{{ ticket.alert_type.value }}</span>
+                    </td>
+                    <td>
+                        <span class="status-badge status-{{ ticket.status.value }}">
+                            {{ ticket.status.value | replace('_', ' ') | title }}
+                        </span>
+                    </td>
+                    <td class="timestamp">
+                        {{ ticket.created_at.strftime('%Y-%m-%d %H:%M') }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <p>No tickets yet. Alerts will appear here when received.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

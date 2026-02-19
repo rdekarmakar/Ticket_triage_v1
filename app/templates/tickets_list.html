@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}All Tickets - Ticket Triage{% endblock %}
+
+{% block content %}
+<div class="tickets-page">
+    <h1>All Tickets</h1>
+
+    <!-- Filters -->
+    <div class="filters">
+        <form method="GET" action="/dashboard/tickets" class="filter-form">
+            <div class="filter-group">
+                <label for="status">Status</label>
+                <select name="status" id="status">
+                    <option value="">All</option>
+                    <option value="open" {% if current_status == 'open' %}selected{% endif %}>Open</option>
+                    <option value="in_progress" {% if current_status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                    <option value="resolved" {% if current_status == 'resolved' %}selected{% endif %}>Resolved</option>
+                    <option value="closed" {% if current_status == 'closed' %}selected{% endif %}>Closed</option>
+                    <option value="escalated" {% if current_status == 'escalated' %}selected{% endif %}>Escalated</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="severity">Severity</label>
+                <select name="severity" id="severity">
+                    <option value="">All</option>
+                    <option value="critical" {% if current_severity == 'critical' %}selected{% endif %}>Critical</option>
+                    <option value="high" {% if current_severity == 'high' %}selected{% endif %}>High</option>
+                    <option value="medium" {% if current_severity == 'medium' %}selected{% endif %}>Medium</option>
+                    <option value="low" {% if current_severity == 'low' %}selected{% endif %}>Low</option>
+                    <option value="info" {% if current_severity == 'info' %}selected{% endif %}>Info</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="alert_type">Type</label>
+                <select name="alert_type" id="alert_type">
+                    <option value="">All</option>
+                    <option value="infrastructure" {% if current_type == 'infrastructure' %}selected{% endif %}>Infrastructure</option>
+                    <option value="application" {% if current_type == 'application' %}selected{% endif %}>Application</option>
+                    <option value="monitoring" {% if current_type == 'monitoring' %}selected{% endif %}>Monitoring</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Filter</button>
+            <a href="/dashboard/tickets" class="btn btn-secondary">Clear</a>
+        </form>
+    </div>
+
+    <!-- Tickets Table -->
+    {% if tickets %}
+    <table class="ticket-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Severity</th>
+                <th>Title</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Source</th>
+                <th>Created</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ticket in tickets %}
+            <tr class="severity-row severity-{{ ticket.severity.value }}">
+                <td>
+                    <a href="/dashboard/ticket/{{ ticket.id }}">#{{ ticket.id }}</a>
+                </td>
+                <td>
+                    <span class="badge badge-{{ ticket.severity.value }}">
+                        {{ ticket.severity.value | upper }}
+                    </span>
+                </td>
+                <td class="ticket-title">
+                    <a href="/dashboard/ticket/{{ ticket.id }}">
+                        {{ ticket.title[:80] }}{% if ticket.title | length > 80 %}...{% endif %}
+                    </a>
+                </td>
+                <td>
+                    <span class="type-badge">{{ ticket.alert_type.value }}</span>
+                </td>
+                <td>
+                    <span class="status-badge status-{{ ticket.status.value }}">
+                        {{ ticket.status.value | replace('_', ' ') | title }}
+                    </span>
+                </td>
+                <td>{{ ticket.source_system or '-' }}</td>
+                <td class="timestamp">
+                    {{ ticket.created_at.strftime('%Y-%m-%d %H:%M') }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="pagination-info">
+        Showing {{ tickets | length }} tickets
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>No tickets found matching your criteria.</p>
+        <a href="/dashboard/tickets" class="btn btn-primary">Clear Filters</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
