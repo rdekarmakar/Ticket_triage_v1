@@ -10,6 +10,16 @@ An AI-powered production issues ticket triage system that automatically analyzes
 - **Multiple Interfaces** - Web dashboard, REST API, CLI tool, and Webex integration
 - **Ticket Management** - Track, update, and resolve incidents with full audit history
 
+## Screenshots
+
+### Dashboard Overview
+![Ticket Dashboard](ticket_dashboard.png)
+*Main dashboard showing ticket statistics and recent tickets with severity indicators*
+
+### Ticket Detail with AI Triage Suggestion
+![Ticket Suggested Action](ticket_suggested_action.png)
+*Ticket detail view showing AI-generated triage suggestion with immediate actions, root cause hypothesis, and escalation recommendations*
+
 ## Architecture
 
 ```
